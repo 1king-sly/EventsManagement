@@ -1,4 +1,5 @@
 ﻿using EventsManagement.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace EventsManagement.DTOs
 {
@@ -8,7 +9,10 @@ namespace EventsManagement.DTOs
 
     public class UserCreateDto(string firstName, string lastName,string email,string password) : UserBase(email, password)
     {
+        [Required(ErrorMessage ="First name is required"),StringLength(20,ErrorMessage ="Name cannot exceed 20 characters")]
         public string FirstName { get; set; } = firstName;
+        [Required(ErrorMessage = "Last name is required"), StringLength(20, ErrorMessage = "Name cannot exceed 20 characters")]
+
         public string LastName { get; set; } = lastName;
     }
 
@@ -20,6 +24,12 @@ namespace EventsManagement.DTOs
         public string Email { get; set; } = email;
         public string? ProfileImage { get; set; } = profileImage;
 
+    }
+
+    public class UserRefreshTokenRequestDto(Guid userId,string refreshToken)
+    {
+        public Guid userId { get; set; } = userId;
+        public string RefreshToken { get; set; } = refreshToken;
     }
 
     public class UserTokenDto(string refreshToken, string accessToken)
