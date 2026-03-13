@@ -33,16 +33,16 @@ namespace EventsManagement.DTOs
 
     }
 
-    public class UserRefreshTokenRequestDto(string userId,string refreshToken)
+    public class UserRefreshTokenRequestDto
     {
-        public string userId { get; set; } = userId;
-        public string RefreshToken { get; set; } = refreshToken;
+        public required string UserId { get; set; } 
+        public required string RefreshToken { get; set; } 
     }
 
-    public class UserTokenDto(string refreshToken, string accessToken)
+    public class UserTokenDto
     {
-        public string RefreshToken { get; set; } = refreshToken;
-        public string AccessToken { get; set; } = accessToken;  
+        public required string RefreshToken { get; set; } 
+        public required string AccessToken { get; set; }   
     }
 
     public class UserLoginOutDto: UserOutDto

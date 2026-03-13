@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Transactions;
 
 namespace EventsManagement.Repository
 {
@@ -15,58 +16,142 @@ namespace EventsManagement.Repository
     {
         public async Task<UserLoginOutDto?> CreateUserAsync(UserCreateDto request)
         {
-            var query = @"SELECT email FROM users WHERE users.email = @email";
-            var existingAccount =await dbConnection.QueryFirstOrDefaultAsync(query,new{ email = request.Email});
+            var transaction = dbConnection.BeginTransaction();
 
-            if (existingAccount != null) return null;
-
-            var hashPassword = GenerateHashPassword(request);
-
-            var createUserQuery = @"
-INSERT INTO users(firstName,lastName,email,password)
-VALUES(@firstName,@lastName,@email,@password);
-
-SELECT * FROM users WHERE userId = LAST_INSERT_ID();
-";
-            var user = await dbConnection.QueryFirstAsync< UserOutDto>(
-                createUserQuery,new {firstName = request.FirstName,lastName =request.LastName,email =request.Email,password = hashPassword});
-
-
-            return new UserLoginOutDto
+            try
             {
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                UserId = user.UserId,
-            ProfileImage= user.ProfileImage, 
-                Token = new UserTokenDto(refreshToken:GenerateRefreshToken(),GenerateAccessToken(new(user.UserId,user.Email)))};
+                var query = @"SELECT email FROM users WHERE users.email = @email";
+                var existingAccount = await dbConnection.QueryFirstOrDefaultAsync(query, new { email = request.Email });
+
+                if (existingAccount != null) return null;
+
+                var hashPassword = GenerateHashPassword(request);
+
+                var createUserQuery = @"
+                                        INSERT INTO users(firstName,lastName,email,password)
+                                        VALUES(@firstName,@lastName,@email,@password);
+
+                                        SELECT * FROM users WHERE userId = LAST_INSERT_ID();";
+                                                                                            
+                var user = await dbConnection.QueryFirstAsync<UserOutDto>(
+                    createUserQuery, new { firstName = request.FirstName, lastName = request.LastName, email = request.Email, password = hashPassword }, transaction);
+
+                var refreshToken = GenerateRefreshToken();
+
+                await InsertRefreshToken(transaction, new RefreshToken {UserId = user.UserId,Token = refreshToken,ExpiresAt = DateTime.UtcNow.AddDays(30)});
+                transaction.Commit();
+                return new UserLoginOutDto
+                {
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    UserId = user.UserId,
+                    ProfileImage = user.ProfileImage,
+                    Token =new UserTokenDto { RefreshToken = refreshToken, AccessToken = GenerateAccessToken(new(user.UserId, user.Email)) }
+                };
+            }
+            catch (Exception) {
+                transaction.Dispose();
+                return null;
+            }
+           
         }
 
         public async Task<UserLoginOutDto?> LoginUserAsync(UserLoginDto request)
         {
-            var query = @"SELECT * FROM users WHERE email = @email;";
-            var user =await dbConnection.QueryFirstOrDefaultAsync<User>(
-                query,new {email = request.Email});
+            var transaction = dbConnection.BeginTransaction();
 
-            if (user is null) return null;
+            try {
+               
+                var query = @"SELECT * FROM users WHERE email = @email;";
+                var user = await dbConnection.QueryFirstOrDefaultAsync<User>(
+                    query, new { email = request.Email },transaction);
 
-            if (!VerifyHashPassword(user, request.Password)) return null;
+                if (user is null) return null;
 
-             return new UserLoginOutDto
-            {
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                UserId = user.UserId,
-            ProfileImage= user.ProfileImage, 
-                Token = new UserTokenDto(refreshToken:GenerateRefreshToken(),GenerateAccessToken(new(user.UserId,user.Email)))};
+                if (!VerifyHashPassword(user, request.Password)) return null;
+
+                var refreshToken = "";
+
+
+                var tokenQuery = @"SELECT * FROM refreshTokens WHERE userId = @userId;";
+                var existingRefreshToken = await dbConnection.QueryFirstOrDefaultAsync<RefreshToken>(tokenQuery,new {userId = user.UserId},transaction );
+                if (existingRefreshToken is null || existingRefreshToken.ExpiresAt >= DateTime.UtcNow)
+                {
+                    refreshToken = GenerateRefreshToken();
+                    await InsertRefreshToken(transaction, new RefreshToken { UserId = user.UserId, Token = refreshToken, ExpiresAt = DateTime.UtcNow.AddDays(30) });
+                }
+                else
+                {
+                    refreshToken = existingRefreshToken.Token;
+                }
+
+
+                transaction.Commit();
+                return new UserLoginOutDto
+                {
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    UserId = user.UserId,
+                    ProfileImage = user.ProfileImage,
+                    Token = new UserTokenDto { RefreshToken = refreshToken, AccessToken = GenerateAccessToken(new(user.UserId, user.Email)) }
+                };
+
+            }
+            catch(Exception) {
+                transaction.Dispose( );
+                return null;
+            }
+
+
 
 
         }
 
-        public Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request)
+        public async Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request)
         {
-            throw new NotImplementedException();
+            try {
+                var transaction = dbConnection.BeginTransaction();
+                var tokenQuery = @"SELECT * FROM refreshTokens WHERE userId = @userId;";
+                var existingRefreshToken = await dbConnection.QueryFirstOrDefaultAsync<RefreshToken>(tokenQuery, new { userId = request.UserId }, transaction);
+
+                if (existingRefreshToken is null || existingRefreshToken.Token != request.RefreshToken) 
+                    return null;
+
+                var query = @"SELECT * FROM users WHERE email = @email;";
+                var user = await dbConnection.QueryFirstAsync<User>(
+                    query, new { email = request.UserId }, transaction);
+
+                if (existingRefreshToken.ExpiresAt >= DateTime.UtcNow)
+                {
+                    var newRefreshToken = GenerateRefreshToken();
+
+                    await InsertRefreshToken(transaction, new RefreshToken { ExpiresAt = DateTime.UtcNow.AddDays(30),Token = newRefreshToken,UserId = request.UserId});
+                    transaction.Commit();
+                    return new UserTokenDto { AccessToken = GenerateAccessToken(new UserJwt(user.UserId,user.Email)),RefreshToken = newRefreshToken
+                    };
+                }
+
+
+                return new UserTokenDto
+                {
+                    AccessToken = GenerateAccessToken(new UserJwt(user.UserId, user.Email)),
+                    RefreshToken = existingRefreshToken.Token
+                };
+                } catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private async  Task InsertRefreshToken(IDbTransaction transaction, RefreshToken token)
+        {
+            var insertRefreshToken = @"INSERT INTO refreshTokens(userId,token,expiresAt)
+                                            VALUES(@userId,@token,@expiresAt);";
+
+            await dbConnection.ExecuteAsync(insertRefreshToken, token, transaction);
+
         }
 
         private static string GenerateHashPassword(UserBase user)
