@@ -1,3 +1,11 @@
+using EventsManagement.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using MySqlConnector;
+using Scalar.AspNetCore;
+using System.Data;
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,6 +13,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+
+builder.Services.AddTransient<IDbConnection>((sp) =>
+    new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddAuthentication(
+    JwtBearerDefaults.AuthenticationScheme
+    ).AddJwtBearer(options => {
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer =true,
+            ValidIssuer = builder.Configuration["AppSettings:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["AppSettings:Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]!)
+                ),
+        };
+    });
 
 var app = builder.Build();
 
@@ -12,6 +42,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();

@@ -25,6 +25,13 @@ namespace EventsManagement.DTOs
         public string? ProfileImage { get; set; } = profileImage;
 
     }
+    public class UserJwt(Guid userId,string email,string? role = null)
+    {
+        public Guid UserId { get; set; } = userId;
+        public string Email { get; set; } = email;
+        public string? Role { get; set; } = role;
+
+    }
 
     public class UserRefreshTokenRequestDto(Guid userId,string refreshToken)
     {
