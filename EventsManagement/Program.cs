@@ -14,6 +14,7 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IInstitutionsRepository, InstitutionRepository>();
 
 builder.Services.AddTransient<IDbConnection>((sp) =>
     new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));

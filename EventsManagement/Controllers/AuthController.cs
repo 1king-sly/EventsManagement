@@ -1,8 +1,6 @@
-﻿using Dapper;
-using EventsManagement.DTOs;
+﻿using EventsManagement.DTOs;
 using EventsManagement.Repository;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
 
@@ -10,10 +8,10 @@ namespace EventsManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IAuthRepository authRepository, IDbConnection dbConnection) : ControllerBase
+    public class AuthController(IAuthRepository authRepository) : ControllerBase
     {
         [HttpPost("register")]
-        public async Task<ActionResult<UserLoginOutDto>> CreateUser(UserCreateDto userCreate)
+        public async Task<ActionResult<UserLoginOutDto>> CreateUserAsync(UserCreateDto userCreate)
         {
             if (userCreate == null)
             {
@@ -30,16 +28,7 @@ namespace EventsManagement.Controllers
 
         }
 
-        [Authorize]
-        [HttpGet]
-        public async Task<ActionResult> TestAsync()
-        {
-            var query = @"SELECT * FROM institutions";
 
-            var data =  await dbConnection.QueryAsync(
-                query);
-            return Ok(data);
-        }
 
         [HttpPost("login")]
 
@@ -61,7 +50,7 @@ namespace EventsManagement.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public async Task<ActionResult<UserTokenDto>> RefreshToken(UserRefreshTokenRequestDto request)
+        public async Task<ActionResult<UserTokenDto>> RefreshTokenAsync(UserRefreshTokenRequestDto request)
         {
             if (request == null)
             {
@@ -75,6 +64,19 @@ namespace EventsManagement.Controllers
                 return NotFound("Invalid user or refresh token");
             }
             return Ok(refreshToken);
+        }
+
+        [Authorize]
+        [HttpPost("reset-password")]
+        public async Task<ActionResult> ResetPasswordAsync(ResetPasswordDto request)
+        {
+            var resetPassword = await authRepository.ResetPasswordAsync(request);
+
+            if (resetPassword is null || resetPassword is false)
+            {
+                return BadRequest(resetPassword is null?"New password can't be same as old password":"Password or internet error occurred! Please try again");
+            }
+            return Ok("Password changed success");
         }
     }
 }

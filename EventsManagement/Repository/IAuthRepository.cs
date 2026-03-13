@@ -7,6 +7,7 @@ namespace EventsManagement.Repository
         Task<UserLoginOutDto?> CreateUserAsync(UserCreateDto user);
         Task<UserLoginOutDto?> LoginUserAsync(UserLoginDto user);
         Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request);
+        Task<bool?> ResetPasswordAsync(ResetPasswordDto request);
 
     }
 }

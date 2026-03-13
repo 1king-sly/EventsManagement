@@ -8,7 +8,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Transactions;
 
 namespace EventsManagement.Repository
 {
@@ -62,10 +61,9 @@ namespace EventsManagement.Repository
             var transaction = dbConnection.BeginTransaction();
 
             try {
-               
-                var query = @"SELECT * FROM users WHERE email = @email;";
-                var user = await dbConnection.QueryFirstOrDefaultAsync<User>(
-                    query, new { email = request.Email },transaction);
+
+                var user = await GetUserFromEmailOrId(value: request.Email,isId:false, transaction: transaction);
+
 
                 if (user is null) return null;
 
@@ -112,16 +110,15 @@ namespace EventsManagement.Repository
         public async Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request)
         {
             try {
-                var transaction = dbConnection.BeginTransaction();
+                IDbTransaction transaction = dbConnection.BeginTransaction();
                 var tokenQuery = @"SELECT * FROM refreshTokens WHERE userId = @userId;";
                 var existingRefreshToken = await dbConnection.QueryFirstOrDefaultAsync<RefreshToken>(tokenQuery, new { userId = request.UserId }, transaction);
 
                 if (existingRefreshToken is null || existingRefreshToken.Token != request.RefreshToken) 
                     return null;
 
-                var query = @"SELECT * FROM users WHERE email = @email;";
-                var user = await dbConnection.QueryFirstAsync<User>(
-                    query, new { email = request.UserId }, transaction);
+
+                var user = await GetUserFromEmailOrId(value:request.UserId,transaction:transaction);
 
                 if (existingRefreshToken.ExpiresAt >= DateTime.UtcNow)
                 {
@@ -129,14 +126,14 @@ namespace EventsManagement.Repository
 
                     await InsertRefreshToken(transaction, new RefreshToken { ExpiresAt = DateTime.UtcNow.AddDays(30),Token = newRefreshToken,UserId = request.UserId});
                     transaction.Commit();
-                    return new UserTokenDto { AccessToken = GenerateAccessToken(new UserJwt(user.UserId,user.Email)),RefreshToken = newRefreshToken
+                    return new UserTokenDto { AccessToken = GenerateAccessToken(new UserJwt(user!.UserId,user.Email)),RefreshToken = newRefreshToken
                     };
                 }
 
 
                 return new UserTokenDto
                 {
-                    AccessToken = GenerateAccessToken(new UserJwt(user.UserId, user.Email)),
+                    AccessToken = GenerateAccessToken(new UserJwt(user!.UserId, user.Email)),
                     RefreshToken = existingRefreshToken.Token
                 };
                 } catch (Exception)
@@ -145,12 +142,61 @@ namespace EventsManagement.Repository
             }
         }
 
-        private async  Task InsertRefreshToken(IDbTransaction transaction, RefreshToken token)
+        public async Task<bool?> ResetPasswordAsync(ResetPasswordDto request)
+        {
+            try
+            {
+                if (request.Password == request.NewPassword) return null;
+
+                var user = await GetUserFromEmailOrId(request.UserId);
+
+
+                if(!VerifyHashPassword(user!,request.Password)) return false;
+
+                var query = @"UPDATE users WHERE userId = @userId SET password = @newPassword;";
+
+                await dbConnection.ExecuteAsync(query,new {userId = user!.UserId, newPassword = request.NewPassword});
+                return true;
+
+            }catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private async Task InsertRefreshToken(IDbTransaction transaction, RefreshToken token)
         {
             var insertRefreshToken = @"INSERT INTO refreshTokens(userId,token,expiresAt)
                                             VALUES(@userId,@token,@expiresAt);";
-
             await dbConnection.ExecuteAsync(insertRefreshToken, token, transaction);
+        }
+
+        private async Task<User?> GetUserFromEmailOrId(string value, bool isId = true,IDbTransaction? transaction = null)
+        {
+            try
+            {
+                User? user = null;
+                if (isId)
+                {
+                   var query = @"SELECT * FROM users WHERE userId = @userId;";
+                   user = await dbConnection.QueryFirstOrDefaultAsync<User>(
+                        query, new { userId = value }, transaction);
+                }
+                else
+                {
+                    var query = @"SELECT * FROM users WHERE email = @email;";
+                    user = await dbConnection.QueryFirstOrDefaultAsync<User>(
+                         query, new { email = value }, transaction);
+                }
+                return user;
+
+            }
+            catch (Exception)
+            {
+                return null;
+
+            }
+
 
         }
 
@@ -195,6 +241,7 @@ namespace EventsManagement.Repository
 
             return Convert.ToBase64String(randomNumber);
         }
+
 
     }
 }
