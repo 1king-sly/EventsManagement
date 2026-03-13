@@ -94,7 +94,7 @@ SELECT * FROM users WHERE userId = LAST_INSERT_ID();
                 audience: configuration["AppSettings:Audience"],
                 claims:claims,
                 signingCredentials: creds,
-                expires:DateTime.UtcNow.AddDays(1)
+                expires:DateTime.UtcNow.AddMinutes(1)
                 );
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);

@@ -33,6 +33,7 @@ builder.Services.AddAuthentication(
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]!)
                 ),
+            ClockSkew = TimeSpan.Zero
         };
     });
 

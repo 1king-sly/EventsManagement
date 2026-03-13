@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using EventsManagement.DTOs;
 using EventsManagement.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
@@ -29,6 +30,7 @@ namespace EventsManagement.Controllers
 
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult> TestAsync()
         {
