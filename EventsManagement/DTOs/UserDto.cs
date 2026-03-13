@@ -3,17 +3,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EventsManagement.DTOs
 {
-    public class UserLoginDto(string email,string password):UserBase(email,password)
+    public class UserLoginDto:UserBase
     {
     }
 
-    public class UserCreateDto(string firstName, string lastName,string email,string password) : UserBase(email, password)
+    public class UserCreateDto : UserBase
     {
         [Required(ErrorMessage ="First name is required"),StringLength(20,ErrorMessage ="Name cannot exceed 20 characters")]
-        public string FirstName { get; set; } = firstName;
+        public required string FirstName { get; set; } 
         [Required(ErrorMessage = "Last name is required"), StringLength(20, ErrorMessage = "Name cannot exceed 20 characters")]
 
-        public string LastName { get; set; } = lastName;
+        public required string LastName { get; set; } 
     }
 
     public class UserOutDto

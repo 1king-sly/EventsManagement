@@ -42,9 +42,26 @@ SELECT * FROM users WHERE userId = LAST_INSERT_ID();
                 Token = new UserTokenDto(refreshToken:GenerateRefreshToken(),GenerateAccessToken(new(user.UserId,user.Email)))};
         }
 
-        public Task<UserLoginOutDto?> LoginUserAsync(UserLoginDto user)
+        public async Task<UserLoginOutDto?> LoginUserAsync(UserLoginDto request)
         {
-            throw new NotImplementedException();
+            var query = @"SELECT * FROM users WHERE email = @email;";
+            var user =await dbConnection.QueryFirstOrDefaultAsync<User>(
+                query,new {email = request.Email});
+
+            if (user is null) return null;
+
+            if (!VerifyHashPassword(user, request.Password)) return null;
+
+             return new UserLoginOutDto
+            {
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                UserId = user.UserId,
+            ProfileImage= user.ProfileImage, 
+                Token = new UserTokenDto(refreshToken:GenerateRefreshToken(),GenerateAccessToken(new(user.UserId,user.Email)))};
+
+
         }
 
         public Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request)
@@ -56,8 +73,8 @@ SELECT * FROM users WHERE userId = LAST_INSERT_ID();
         {
             return new PasswordHasher<UserBase>().HashPassword(user, user.Password);
         }
-        private static bool VerifyHashPassword(UserBase user, string hashPassword) { 
-          var verifyPassword =  new PasswordHasher<UserBase>().VerifyHashedPassword(user,user.Password, hashPassword);
+        private static bool VerifyHashPassword(User user, string providedPassword) { 
+          var verifyPassword =  new PasswordHasher<UserBase>().VerifyHashedPassword(user,user.Password, providedPassword);
 
             return verifyPassword == PasswordVerificationResult.Success;
         }

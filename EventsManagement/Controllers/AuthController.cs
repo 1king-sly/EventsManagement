@@ -49,7 +49,7 @@ namespace EventsManagement.Controllers
 
             }
 
-            var user = authRepository.LoginUserAsync(userLogin);
+            var user =await authRepository.LoginUserAsync(userLogin);
 
             if (user == null)
             {
