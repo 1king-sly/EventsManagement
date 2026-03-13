@@ -22,11 +22,24 @@ namespace EventsManagement.Repository
 
             var hashPassword = GenerateHashPassword(request);
 
-            var createUserQuery = @"INSERT INTO users(firstName,lastName,email,password) VALUES(@firstName,@lastName,@email,@password)";
-            var user = await dbConnection.QueryFirstAsync<UserOutDto>(
+            var createUserQuery = @"
+INSERT INTO users(firstName,lastName,email,password)
+VALUES(@firstName,@lastName,@email,@password);
+
+SELECT * FROM users WHERE userId = LAST_INSERT_ID();
+";
+            var user = await dbConnection.QueryFirstAsync< UserOutDto>(
                 createUserQuery,new {firstName = request.FirstName,lastName =request.LastName,email =request.Email,password = hashPassword});
 
-           return new UserLoginOutDto(user.UserId, user.FirstName, user.LastName, user.Email, user.ProfileImage, GenerateRefreshToken(), GenerateAccessToken(new(user.UserId,user.Email)));
+
+            return new UserLoginOutDto
+            {
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                UserId = user.UserId,
+            ProfileImage= user.ProfileImage, 
+                Token = new UserTokenDto(refreshToken:GenerateRefreshToken(),GenerateAccessToken(new(user.UserId,user.Email)))};
         }
 
         public Task<UserLoginOutDto?> LoginUserAsync(UserLoginDto user)
@@ -50,7 +63,7 @@ namespace EventsManagement.Repository
         }
         private string GenerateAccessToken(UserJwt user) {
             var claims = new List<Claim> { 
-                new(ClaimTypes.NameIdentifier,user.UserId.ToString()),
+                new(ClaimTypes.NameIdentifier,user.UserId),
                 new (ClaimTypes.Email,user.Email ),
                 new(ClaimTypes.Role,user.Role ?? "User"),
             };

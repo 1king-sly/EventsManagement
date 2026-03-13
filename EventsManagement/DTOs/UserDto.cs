@@ -16,26 +16,26 @@ namespace EventsManagement.DTOs
         public string LastName { get; set; } = lastName;
     }
 
-    public class UserOutDto(Guid userId, string firstName,string lastName,string email,string? profileImage)
+    public class UserOutDto
     {
-        public Guid UserId { get; set; } = userId;
-        public string FirstName { get; set; } = firstName;
-        public string LastName { get; set; } = lastName;
-        public string Email { get; set; } = email;
-        public string? ProfileImage { get; set; } = profileImage;
+        public required string UserId { get; set; } 
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }  
+        public required string Email { get; set; } 
+        public string? ProfileImage { get; set; }
 
     }
-    public class UserJwt(Guid userId,string email,string? role = null)
+    public class UserJwt(string userId,string email,string? role = null)
     {
-        public Guid UserId { get; set; } = userId;
+        public string UserId { get; set; } = userId;
         public string Email { get; set; } = email;
         public string? Role { get; set; } = role;
 
     }
 
-    public class UserRefreshTokenRequestDto(Guid userId,string refreshToken)
+    public class UserRefreshTokenRequestDto(string userId,string refreshToken)
     {
-        public Guid userId { get; set; } = userId;
+        public string userId { get; set; } = userId;
         public string RefreshToken { get; set; } = refreshToken;
     }
 
@@ -45,8 +45,8 @@ namespace EventsManagement.DTOs
         public string AccessToken { get; set; } = accessToken;  
     }
 
-    public class UserLoginOutDto(Guid userId, string firstName, string lastName, string email, string? profileImage,string refreshToken,string accessToken) : UserOutDto(userId, firstName, lastName, email, profileImage)
+    public class UserLoginOutDto: UserOutDto
     {
-        public UserTokenDto Token { get; set; } = new(refreshToken,accessToken);
+        public required UserTokenDto Token { get; set; }
     }
 }

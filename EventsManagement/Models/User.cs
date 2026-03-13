@@ -8,9 +8,9 @@ namespace EventsManagement.Models
        [Required(ErrorMessage = "Password must be provided"),StringLength(20,MinimumLength =8,ErrorMessage ="{0} must be atleast {2} characters and maximum {1}")]
         public string Password { get; set; } = password;
     }
-    public class User(Guid userId, string firstName,string lastName,string email,string password,string profileImage,string? institutionId,string? schoolId):UserBase(email,password)
+    public class User(string userId, string firstName,string lastName,string email,string password,string profileImage,string? institutionId,string? schoolId):UserBase(email,password)
     {
-        public Guid UserId { get; set; } = userId;
+        public string UserId { get; set; } = userId;
         public string FirstName { get; set; } = firstName;
         public string LastName { get; set; } = lastName;
         public string ProfileImage { get; set; } = profileImage;
