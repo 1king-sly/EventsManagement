@@ -15,14 +15,15 @@ namespace EventsManagement.Repository
     {
         public async Task<UserLoginOutDto?> CreateUserAsync(UserCreateDto request)
         {
-            var transaction = dbConnection.BeginTransaction();
+            
 
             try
             {
                 var query = @"SELECT email FROM users WHERE users.email = @email";
                 var existingAccount = await dbConnection.QueryFirstOrDefaultAsync(query, new { email = request.Email });
 
-                if (existingAccount != null) return null;
+                if (existingAccount != null)
+                    return null;
 
                 var hashPassword = GenerateHashPassword(request);
 
@@ -31,11 +32,16 @@ namespace EventsManagement.Repository
                                         VALUES(@firstName,@lastName,@email,@password);
 
                                         SELECT * FROM users WHERE userId = LAST_INSERT_ID();";
-                                                                                            
-                var user = await dbConnection.QueryFirstAsync<UserOutDto>(
-                    createUserQuery, new { firstName = request.FirstName, lastName = request.LastName, email = request.Email, password = hashPassword }, transaction);
 
+                var user = await dbConnection.QueryFirstAsync<UserOutDto>(
+                    createUserQuery, new { firstName = request.FirstName, lastName = request.LastName, email = request.Email, password = hashPassword });
+
+
+                dbConnection.Open();
+
+                var transaction = dbConnection.BeginTransaction();
                 var refreshToken = GenerateRefreshToken();
+                Console.WriteLine(user.FirstName);
 
                 await InsertRefreshToken(transaction, new RefreshToken {UserId = user.UserId,Token = refreshToken,ExpiresAt = DateTime.UtcNow.AddDays(30)});
                 transaction.Commit();
@@ -49,8 +55,11 @@ namespace EventsManagement.Repository
                     Token =new UserTokenDto { RefreshToken = refreshToken, AccessToken = GenerateAccessToken(new(user.UserId, user.Email)) }
                 };
             }
-            catch (Exception) {
-                transaction.Dispose();
+            catch (Exception e) {
+
+                Console.WriteLine(e.Message);
+
+                dbConnection.Close();
                 return null;
             }
            
@@ -58,6 +67,8 @@ namespace EventsManagement.Repository
 
         public async Task<UserLoginOutDto?> LoginUserAsync(UserLoginDto request)
         {
+            dbConnection.Open();
+
             var transaction = dbConnection.BeginTransaction();
 
             try {
@@ -110,6 +121,8 @@ namespace EventsManagement.Repository
         public async Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request)
         {
             try {
+                dbConnection.Open();
+
                 IDbTransaction transaction = dbConnection.BeginTransaction();
                 var tokenQuery = @"SELECT * FROM refreshTokens WHERE userId = @userId;";
                 var existingRefreshToken = await dbConnection.QueryFirstOrDefaultAsync<RefreshToken>(tokenQuery, new { userId = request.UserId }, transaction);
@@ -168,7 +181,7 @@ namespace EventsManagement.Repository
         {
             var insertRefreshToken = @"INSERT INTO refreshTokens(userId,token,expiresAt)
                                             VALUES(@userId,@token,@expiresAt);";
-            await dbConnection.ExecuteAsync(insertRefreshToken, token, transaction);
+            await dbConnection.ExecuteAsync(insertRefreshToken, new {userId = token.UserId, token = token.Token,expiresAt = token.ExpiresAt}, transaction);
         }
 
         private async Task<User?> GetUserFromEmailOrId(string value, bool isId = true,IDbTransaction? transaction = null)
@@ -225,7 +238,7 @@ namespace EventsManagement.Repository
                 audience: configuration["AppSettings:Audience"],
                 claims:claims,
                 signingCredentials: creds,
-                expires:DateTime.UtcNow.AddMinutes(1)
+                expires:DateTime.UtcNow.AddDays(1)
                 );
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
