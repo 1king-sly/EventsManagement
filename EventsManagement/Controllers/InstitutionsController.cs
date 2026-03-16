@@ -18,15 +18,16 @@ namespace EventsManagement.Controllers
         {
             var institution = await repository.CreateInstitutionAsync(request);
 
-            return institution is null ? BadRequest() : Ok(institution);
+            return institution is null ? BadRequest("Instiution with name or email already exists") : Ok(institution);
         }
 
 
         [Authorize]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InstitutionOutDto>>> GetInstitutionsAsync()
+        public async Task<ActionResult<List<InstitutionOutDto>>> GetInstitutionsAsync()
         {
             var institutions = await repository.GetAllInstutionsAsync();
+
 
             return Ok(institutions);
         }

@@ -22,16 +22,21 @@ namespace EventsManagement.Repository
             return institution;
 
         }
-        public async Task<IEnumerable<InstitutionOutDto>> GetAllInstutionsAsync()
+        public async Task<List<InstitutionOutDto>> GetAllInstutionsAsync()
         {
             try {
                 var query = @"SELECT * FROM institutions;";
 
-                var institutions = await dbConnection.QueryAsync<InstitutionOutDto>(query);
-                return institutions;
+                var ins = await dbConnection.QueryAsync<InstitutionOutDto>(query);
+
+
+
+                return [.. ins];
             
-            }catch (Exception)
+            }catch (Exception ex)
             {
+
+                Console.WriteLine(ex.Message);
                 return [];
             }
         }

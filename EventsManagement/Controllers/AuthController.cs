@@ -24,7 +24,7 @@ namespace EventsManagement.Controllers
                 return BadRequest("Account with email already exists");
             }
 
-            return Ok(user);
+            return CreatedAtAction("login",user);
 
         }
 

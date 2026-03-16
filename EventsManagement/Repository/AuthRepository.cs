@@ -74,18 +74,14 @@ namespace EventsManagement.Repository
             try {
 
                 var user = await GetUserFromEmailOrId(value: request.Email,isId:false, transaction: transaction);
-
-
                 if (user is null) return null;
 
                 if (!VerifyHashPassword(user, request.Password)) return null;
 
                 var refreshToken = "";
-
-
                 var tokenQuery = @"SELECT * FROM refreshTokens WHERE userId = @userId;";
                 var existingRefreshToken = await dbConnection.QueryFirstOrDefaultAsync<RefreshToken>(tokenQuery,new {userId = user.UserId},transaction );
-                if (existingRefreshToken is null || existingRefreshToken.ExpiresAt >= DateTime.UtcNow)
+                if (existingRefreshToken is null || existingRefreshToken.ExpiresAt <= DateTime.UtcNow)
                 {
                     refreshToken = GenerateRefreshToken();
                     await InsertRefreshToken(transaction, new RefreshToken { UserId = user.UserId, Token = refreshToken, ExpiresAt = DateTime.UtcNow.AddDays(30) });
@@ -94,8 +90,6 @@ namespace EventsManagement.Repository
                 {
                     refreshToken = existingRefreshToken.Token;
                 }
-
-
                 transaction.Commit();
                 return new UserLoginOutDto
                 {
@@ -112,17 +106,12 @@ namespace EventsManagement.Repository
                 transaction.Dispose( );
                 return null;
             }
-
-
-
-
         }
 
         public async Task<UserTokenDto?> RefreshTokenAsync(UserRefreshTokenRequestDto request)
         {
             try {
                 dbConnection.Open();
-
                 IDbTransaction transaction = dbConnection.BeginTransaction();
                 var tokenQuery = @"SELECT * FROM refreshTokens WHERE userId = @userId;";
                 var existingRefreshToken = await dbConnection.QueryFirstOrDefaultAsync<RefreshToken>(tokenQuery, new { userId = request.UserId }, transaction);
@@ -133,7 +122,7 @@ namespace EventsManagement.Repository
 
                 var user = await GetUserFromEmailOrId(value:request.UserId,transaction:transaction);
 
-                if (existingRefreshToken.ExpiresAt >= DateTime.UtcNow)
+                if (existingRefreshToken.ExpiresAt <= DateTime.UtcNow)
                 {
                     var newRefreshToken = GenerateRefreshToken();
 
