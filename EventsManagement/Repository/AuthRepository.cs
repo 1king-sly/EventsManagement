@@ -19,6 +19,9 @@ namespace EventsManagement.Repository
 
             try
             {
+                dbConnection.Open();
+
+                var transaction = dbConnection.BeginTransaction();
                 var query = @"SELECT email FROM users WHERE users.email = @email";
                 var existingAccount = await dbConnection.QueryFirstOrDefaultAsync(query, new { email = request.Email });
 
@@ -26,6 +29,7 @@ namespace EventsManagement.Repository
                     return null;
 
                 var hashPassword = GenerateHashPassword(request);
+
 
                 var createUserQuery = @"
                                         INSERT INTO users(firstName,lastName,email,password)
@@ -37,9 +41,7 @@ namespace EventsManagement.Repository
                     createUserQuery, new { firstName = request.FirstName, lastName = request.LastName, email = request.Email, password = hashPassword });
 
 
-                dbConnection.Open();
 
-                var transaction = dbConnection.BeginTransaction();
                 var refreshToken = GenerateRefreshToken();
                 Console.WriteLine(user.FirstName);
 
