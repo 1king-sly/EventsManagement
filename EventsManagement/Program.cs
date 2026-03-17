@@ -8,6 +8,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+DotNetEnv.Env.Load();
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -16,6 +18,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IInstitutionsRepository, InstitutionRepository>();
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
+
+
 
 
 
