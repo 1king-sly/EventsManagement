@@ -15,6 +15,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IInstitutionsRepository, InstitutionRepository>();
+builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
+
+
 
 builder.Services.AddTransient<IDbConnection>((sp) =>
     new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
