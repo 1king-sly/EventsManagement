@@ -24,7 +24,7 @@ namespace EventsManagement.Controllers
         {
             var clubs = await clubRepository.GetAllClubsByInstitutionAsync(id);
 
-            return clubs is null ? NoContent() : Ok(clubs);
+            return clubs is null ? NotFound("Institution does not exist") : Ok(clubs);
 
         }
         [HttpGet("school/{id}")]
@@ -33,7 +33,7 @@ namespace EventsManagement.Controllers
         {
             var clubs = await clubRepository.GetAllClubsBySchoolAsync(id);
 
-            return clubs is null ? NoContent() : Ok(clubs);
+            return clubs is null ? NotFound("School does not exist") : Ok(clubs);
 
         }
         [HttpGet("{id}")]

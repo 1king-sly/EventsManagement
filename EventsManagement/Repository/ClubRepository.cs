@@ -5,7 +5,7 @@ using System.Data;
 namespace EventsManagement.Repository
 {
     enum QueryType {institution,school };
-    public class ClubRepository(IDbConnection dbConnection) : IClubRepository
+    public class ClubRepository(IDbConnection dbConnection,IInstitutionsRepository institutionsRepository,ISchoolRepository schoolRepository) : IClubRepository
     {
         public async Task<ClubOutDto?> CreateClubAsync(ClubInDto request)
         {
@@ -64,6 +64,9 @@ namespace EventsManagement.Repository
         {
             try
             {
+                var institution = await institutionsRepository.GetInstitutionAsync(institutionId);
+
+                if(institution is null) return null;
                 var clubs = await GetAllOrInstitutionOrSchoolClubs(valueId:institutionId,queryType:QueryType.institution);
 
                 return clubs;
@@ -78,6 +81,9 @@ namespace EventsManagement.Repository
         {
             try
             {
+                var school = await schoolRepository.GetSchoolByIdAsync(schoolId);
+
+                if(school is null) return null;
                 var clubs = await GetAllOrInstitutionOrSchoolClubs(valueId: schoolId, queryType: QueryType.school);
 
                 return clubs;
@@ -141,7 +147,7 @@ namespace EventsManagement.Repository
                     switch (queryType)
                     {
                         case QueryType.institution:
-                            query += " WHERE schoolId IN(SELECT schoolId FROM institutions WHERE institutionId = @id);";
+                            query += " WHERE schoolId IN(SELECT schoolId FROM schools WHERE institutionId = @id);";
                             
                             break;
                             case QueryType.school:
