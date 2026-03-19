@@ -15,18 +15,22 @@ namespace EventsManagement.Repository
     {
         public async Task<UserLoginOutDto?> CreateUserAsync(UserCreateDto request)
         {
-            
+            dbConnection.Open();
 
+
+            
             try
             {
-                dbConnection.Open();
 
-                var transaction = dbConnection.BeginTransaction();
                 var query = @"SELECT email FROM users WHERE users.email = @email";
-                var existingAccount = await dbConnection.QueryFirstOrDefaultAsync(query, new { email = request.Email });
 
+                var existingAccount = await dbConnection.QueryFirstOrDefaultAsync(query, new { email = request.Email });
                 if (existingAccount != null)
+                {
                     return null;
+                }
+            var transaction = dbConnection.BeginTransaction();
+
 
                 var hashPassword = GenerateHashPassword(request);
 
@@ -38,12 +42,11 @@ namespace EventsManagement.Repository
                                         SELECT * FROM users WHERE userId = LAST_INSERT_ID();";
 
                 var user = await dbConnection.QueryFirstAsync<UserOutDto>(
-                    createUserQuery, new { firstName = request.FirstName, lastName = request.LastName, email = request.Email, password = hashPassword });
+                    createUserQuery, new { firstName = request.FirstName, lastName = request.LastName, email = request.Email, password = hashPassword },transaction);
 
 
 
                 var refreshToken = GenerateRefreshToken();
-                Console.WriteLine(user.FirstName);
 
                 await InsertRefreshToken(transaction, new RefreshToken {UserId = user.UserId,Token = refreshToken,ExpiresAt = DateTime.UtcNow.AddDays(30)});
                 transaction.Commit();
@@ -61,7 +64,6 @@ namespace EventsManagement.Repository
 
                 Console.WriteLine(e.Message);
 
-                dbConnection.Close();
                 return null;
             }
            
