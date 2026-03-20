@@ -99,6 +99,18 @@ namespace EventsManagement.Repository
 
         }
 
+        public async Task<IEnumerable<UserOutDto>> GetInstitutionMembersAsync(string institutionId)
+        {
+            var query = @"SELECT * FROM users WHERE institutionId = @id;";
 
+            var users = await dbConnection.QueryAsync<UserOutDto>(query,new {id = institutionId});
+
+            return users;
+        }
+
+        public Task<IEnumerable<UserOutDto>> GetInstitutionLeadersAsync(string institutionId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

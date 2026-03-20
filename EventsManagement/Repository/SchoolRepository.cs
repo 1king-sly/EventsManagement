@@ -56,6 +56,20 @@ namespace EventsManagement.Repository
             
         }
 
+        public Task<IEnumerable<UserOutDto>> GetSchoolLeadersAsync(string institutionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<IEnumerable<UserOutDto>> GetSchoolMembersAsync(string institutionId)
+        {
+            var query = @"SELECT * FROM users WHERE schoolId = @id;";
+
+            var users = await dbConnection.QueryAsync<UserOutDto>(query, new { id = institutionId });
+
+            return users;
+        }
+
         public async Task<SchoolOutDto?> UpdateSchoolAsync(SchoolUpdateDto request)
         {
             var school = await GetSchoolByIdAsync(request.schoolId);

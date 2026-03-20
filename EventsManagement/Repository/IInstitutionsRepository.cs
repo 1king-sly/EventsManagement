@@ -10,5 +10,8 @@ namespace EventsManagement.Repository
         Task<InstitutionOutDto?> UpdateInstitutionAsync(string institutionId, InstitutionInDto request);
         Task<bool?> DeleteInstitutionAsync(string requestId);
 
+        Task<IEnumerable<UserOutDto>> GetInstitutionMembersAsync(string institutionId);
+        Task<IEnumerable<UserOutDto>> GetInstitutionLeadersAsync(string institutionId);
+
     }
 }

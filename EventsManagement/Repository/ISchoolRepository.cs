@@ -12,5 +12,9 @@ namespace EventsManagement.Repository
         public Task<bool?> DeleteSchoolAsync(string schoolId);
         public Task<SchoolOutDto?> UpdateSchoolAsync(SchoolUpdateDto request);
 
+        Task<IEnumerable<UserOutDto>> GetSchoolMembersAsync(string institutionId);
+        Task<IEnumerable<UserOutDto>> GetSchoolLeadersAsync(string institutionId);
+
+
     }
 }

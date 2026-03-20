@@ -40,6 +40,14 @@ namespace EventsManagement.Controllers
 
             return institution is null ? BadRequest() : Ok(institution);
         }
+        [Authorize]
+        [HttpGet("members/{id}")]
+
+        public async Task<ActionResult<IEnumerable<UserOutDto>>> GetInstitutionMembersAsync(string id) {
+            var users = await repository.GetInstitutionMembersAsync(id);
+
+            return users is null ? BadRequest() : Ok(users);
+        }
 
         [Authorize]
         [HttpPut("{id}")]
