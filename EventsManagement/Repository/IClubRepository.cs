@@ -16,6 +16,12 @@ namespace EventsManagement.Repository
 
         Task<bool?> DeleteClubAsync(string clubId);
 
+        Task<IEnumerable<UserOutDto>?> GetClubUsersAsync(string clubId);
+        Task<IEnumerable<UserOutDto>?> GetClubLeadersAsync(string clubId);
+
+        Task<bool?> AddClubLeaderAsync(string clubId, string userId);
+        Task<bool> AddClubMemberAsync(ClubMemberAddDto request);
+
 
     }
 }

@@ -8,4 +8,11 @@ namespace EventsManagement.DTOs
     }
 
     public class ClubOutDto : Club { }
+
+    public class ClubMemberAddDto
+    {
+        public required string userId { get; set; } 
+
+        public required string ClubId {  get; set; }
+    }
 }

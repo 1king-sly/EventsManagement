@@ -7,6 +7,10 @@ namespace EventsManagement.Repository
     enum QueryType {institution,school };
     public class ClubRepository(IDbConnection dbConnection,IInstitutionsRepository institutionsRepository,ISchoolRepository schoolRepository) : IClubRepository
     {
+
+
+        //var IndexingDatabase = @"CREATE INDEX index_name ON table_name(table_attribute)";
+        //var multiColumnIndex = @"CREATE INDEX index_name ON table_name(attribute1,attribute2);";
         public async Task<ClubOutDto?> CreateClubAsync(ClubInDto request)
         {
             try {
@@ -109,6 +113,71 @@ namespace EventsManagement.Repository
             }
         }
 
+        public async Task<IEnumerable<UserOutDto>?> GetClubLeadersAsync(string clubId)
+        {
+            try {
+                var club = await GetClubAsync(clubId);
+
+                if(club is null) return null;
+
+                var query = @"SELECT userId,startDate FROM entities_leadership AS el
+                              WHERE entityId = @id AND entityType = Club
+                              JOIN users ON el.userId = users.usersId";
+
+                var leaders = await dbConnection.QueryAsync(query, new { id = clubId });
+
+                Console.WriteLine(leaders.ToString());
+
+                return null;
+
+
+
+            }
+            catch (Exception) {
+                return null;
+            }
+        }
+
+        public Task<IEnumerable<UserOutDto>?> GetClubUsersAsync(string clubId)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<bool?> AddClubLeaderAsync(string clubId, string userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<bool> AddClubMemberAsync(ClubMemberAddDto request)
+        {
+            try {
+                var existQuery = @"SELECT userId FROM users WHERE userId = @id;
+                                    SELECT clubId FROM clubs WHERE clubId = @cId";
+
+                using var multi = await dbConnection.QueryMultipleAsync(existQuery, new { id = request.userId, cId = request.ClubId });
+                var userExists = await multi.ReadFirstOrDefaultAsync<string>();
+                var clubExists = await multi.ReadFirstOrDefaultAsync<string>();
+
+                if (userExists != null && clubExists != null)
+                {
+                    Console.WriteLine("Adding club member");
+                    var insertQuery = @"INSERT INTO users_clubs(clubId,userId) VALUES(@Cid,@Uid); ";
+
+                    await dbConnection.ExecuteAsync(insertQuery, new { Cid = request.ClubId, Uid = request.userId });
+
+                    return true;
+                }
+                else return false;
+
+
+
+
+            }
+            catch(Exception ex)
+            {
+                throw new Exception(message:ex.Message);
+            }
+        }
+
         public async Task<ClubOutDto?> UpdateClubAsync(string clubId, ClubInDto request)
         {
             try
@@ -167,6 +236,15 @@ namespace EventsManagement.Repository
             {
                 return null;
             }
+        }
+
+        private class EntityLeadership
+        {
+            public required string UserId { get; set; }
+
+            public required DateTime StartDate { get; set; }
+
+
         }
     }
 }

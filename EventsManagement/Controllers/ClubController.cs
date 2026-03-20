@@ -72,5 +72,14 @@ namespace EventsManagement.Controllers
             return club is null ? BadRequest("Club with name already exists") : StatusCode(201,club);
 
         }
+
+        [HttpPost("members")]
+
+        public async Task<ActionResult> AddClubMemberAsync(ClubMemberAddDto request)
+        {
+            var result = await clubRepository.AddClubMemberAsync(request);
+
+            return result ? Ok() : NotFound("User or club does not exist");
+        }
     }
 }
