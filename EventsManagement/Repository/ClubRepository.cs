@@ -113,27 +113,41 @@ namespace EventsManagement.Repository
             }
         }
 
-        public async Task<IEnumerable<UserOutDto>?> GetClubLeadersAsync(string clubId)
+        public async Task<IEnumerable<LeaderOutDto>?> GetClubLeadersAsync(string clubId)
         {
             try {
                 var club = await GetClubAsync(clubId);
 
                 if(club is null) return null;
 
-                var query = @"SELECT userId,startDate FROM entities_leadership AS el
-                              WHERE entityId = @id AND entityType = Club
-                              JOIN users ON el.userId = users.usersId";
+                Console.WriteLine("Club not null");
 
-                var leaders = await dbConnection.QueryAsync(query, new { id = clubId });
+                var query = @"SELECT el.startDate,u.* FROM entities_leadership AS el
+                              JOIN users AS u ON el.userId = u.userId
+                              WHERE entityId = @id AND entityType = 'Club'";
 
-                Console.WriteLine(leaders.ToString());
+                var leaders = await dbConnection.QueryAsync<DateTime,UserOutDto, LeaderOutDto>(query, (startDate, user) =>
+                {
+                    return new LeaderOutDto
+                    {
+                        UserId = user.UserId,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Email = user.Email,
+                        ProfileImage = user.ProfileImage,
+                        StartDate = startDate
+                    };
+                }, new { id = clubId }, splitOn: "userId");
 
-                return null;
+                
+                Console.WriteLine(leaders);
+                return leaders;
 
 
 
             }
-            catch (Exception) {
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
                 return null;
             }
         }
@@ -142,9 +156,14 @@ namespace EventsManagement.Repository
         {
             throw new NotImplementedException();
         }
-        public Task<bool?> AddClubLeaderAsync(string clubId, string userId)
+        public async Task<bool> AddClubLeaderAsync(string clubId, LeaderInDto request)
         {
-            throw new NotImplementedException();
+            Console.WriteLine(request.LeaderType);
+            var sql = @"INSERT INTO entities_leadership(userId,entityId,entityType,startDate) VALUES(@UserId,@ClubId,@EntityType,@StartDate);";
+
+            var result = await dbConnection.ExecuteAsync(sql, new { request.UserId, ClubId = clubId, EntityType = request.LeaderType.ToString(), request.StartDate });
+
+            return result > 0;
         }
 
         public async Task<bool> AddClubMemberAsync(ClubMemberAddDto request)
@@ -159,7 +178,6 @@ namespace EventsManagement.Repository
 
                 if (userExists != null && clubExists != null)
                 {
-                    Console.WriteLine("Adding club member");
                     var insertQuery = @"INSERT INTO users_clubs(clubId,userId) VALUES(@Cid,@Uid); ";
 
                     await dbConnection.ExecuteAsync(insertQuery, new { Cid = request.ClubId, Uid = request.userId });

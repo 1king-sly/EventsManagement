@@ -33,37 +33,37 @@ namespace EventsManagement.Controllers
         }
 
         [Authorize]
-        [HttpGet("{id}")]
+        [HttpGet("{institutionId}")]
 
-        public async Task<ActionResult<InstitutionOutDto>> GetInstitutionByIdAsync(string id) {
-            var institution = await repository.GetInstitutionAsync(id);
+        public async Task<ActionResult<InstitutionOutDto>> GetInstitutionByIdAsync(string institutionId) {
+            var institution = await repository.GetInstitutionAsync(institutionId);
 
             return institution is null ? BadRequest() : Ok(institution);
         }
         [Authorize]
-        [HttpGet("members/{id}")]
+        [HttpGet("/members/{institutionId}")]
 
-        public async Task<ActionResult<IEnumerable<UserOutDto>>> GetInstitutionMembersAsync(string id) {
-            var users = await repository.GetInstitutionMembersAsync(id);
+        public async Task<ActionResult<IEnumerable<UserOutDto>>> GetInstitutionMembersAsync(string institutionId) {
+            var users = await repository.GetInstitutionMembersAsync(institutionId);
 
             return users is null ? BadRequest() : Ok(users);
         }
 
         [Authorize]
-        [HttpPut("{id}")]
+        [HttpPut("{institutionId}")]
 
-        public async Task<ActionResult<InstitutionOutDto>> UpdateInstitutionAsync(string id, InstitutionInDto request)
+        public async Task<ActionResult<InstitutionOutDto>> UpdateInstitutionAsync(string institutionId, InstitutionInDto request)
         {
-            var institution = await repository.UpdateInstitutionAsync(id, request);
+            var institution = await repository.UpdateInstitutionAsync(institutionId, request);
             return institution is null ? BadRequest() : Ok(institution);
         }
 
         [Authorize]
-        [HttpDelete("{id}")]
+        [HttpDelete("{institutionId}")]
 
-        public async Task<ActionResult> DeleteInstiutionAsync(string id)
+        public async Task<ActionResult> DeleteInstiutionAsync(string institutionId)
         {
-            var result = await repository.DeleteInstitutionAsync(id);
+            var result = await repository.DeleteInstitutionAsync(institutionId);
 
             return result is null ? NotFound("Institution does not exist") :result is false ? BadRequest() : NoContent();
         }

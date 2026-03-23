@@ -1,5 +1,6 @@
 ﻿using EventsManagement.DTOs;
 using EventsManagement.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventsManagement.Controllers
@@ -31,6 +32,15 @@ namespace EventsManagement.Controllers
 
 
             return school is null ? NotFound("School does not exist") : Ok(school);
+        }
+
+        [HttpGet("/school/members/{schoolId}")]
+
+        public async Task<ActionResult<IEnumerable<UserOutDto>>> GetSchoolMembersAsync(string schoolId)
+        {
+            var users = await schoolRepository.GetSchoolMembersAsync(schoolId);
+
+            return users is null ? BadRequest() : Ok(users);
         }
         [HttpPut("/school/{schoolId}")]
         public async Task<ActionResult<SchoolOutDto>> UpdateSchoolAsync(string schoolId, SchoolUpdateDto request)

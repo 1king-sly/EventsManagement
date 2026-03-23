@@ -81,5 +81,21 @@ namespace EventsManagement.Controllers
 
             return result ? Ok() : NotFound("User or club does not exist");
         }
+        [HttpGet("leaders/{clubId}")]
+
+        public async Task<ActionResult<IEnumerable<LeaderOutDto>>> GetClubLeadersAsync(string clubId)
+        {
+            var result = await clubRepository.GetClubLeadersAsync(clubId);
+
+            return result is not null ? Ok(result) : NotFound("Club does not exist");
+        }
+        [HttpPost("leaders/{clubId}")]
+
+        public async Task<ActionResult> AddClubLeaderAsync(string clubId, LeaderInDto request)
+        {
+            var result = await clubRepository.AddClubLeaderAsync(clubId,request);
+
+            return result  ? Ok() : NotFound("Club or User does not exist");
+        }
     }
 }
