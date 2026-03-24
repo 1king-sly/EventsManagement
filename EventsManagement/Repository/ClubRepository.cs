@@ -120,7 +120,6 @@ namespace EventsManagement.Repository
 
                 if(club is null) return null;
 
-                Console.WriteLine("Club not null");
 
                 var query = @"SELECT el.startDate,u.* FROM entities_leadership AS el
                               JOIN users AS u ON el.userId = u.userId
@@ -140,7 +139,6 @@ namespace EventsManagement.Repository
                 }, new { id = clubId }, splitOn: "userId");
 
                 
-                Console.WriteLine(leaders);
                 return leaders;
 
 
@@ -256,13 +254,6 @@ namespace EventsManagement.Repository
             }
         }
 
-        private class EntityLeadership
-        {
-            public required string UserId { get; set; }
 
-            public required DateTime StartDate { get; set; }
-
-
-        }
     }
 }

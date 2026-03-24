@@ -19,4 +19,13 @@ namespace EventsManagement.DTOs
         public  DateTime StartDate { get; set; } = DateTime.UtcNow;
     }
 
+    public class EntityLeadership
+    {
+        public required string UserId { get; set; }
+
+        public required DateTime StartDate { get; set; }
+
+
+    }
+
 }
